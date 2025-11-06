@@ -18,9 +18,46 @@ const app = firebase.initializeApp(firebaseConfig);
 
 const messaging = firebase.messaging();
 messaging.onMessage((payload) => {
-  alert("có thông báo");
-  console.log("payload", payload);
+   const { title, body } = payload.notification;
+  showIncomingMessageNotification(title, body);
+  console.log("onMessage",title, body)
+
 });
+
+/**
+ * Hiển thị thông báo FCM khi web đang mở (foreground)
+ * @param {string} title - Tiêu đề thông báo
+ * @param {string} body - Nội dung thông báo
+ * @param {string} [icon='/icon.png'] - Icon hiển thị trong thông báo
+ */
+function showIncomingMessageNotification(title, body, icon = '/icon.png') {
+  // Kiểm tra quyền hiển thị thông báo
+  if (Notification.permission === "granted") {
+    // Nếu user đã cho phép, hiển thị thông báo
+    new Notification(title, {
+      body: body,
+      icon: icon,
+      tag: "chat-message", // để các thông báo cùng loại gộp chung
+      renotify: true
+    });
+  } else if (Notification.permission !== "denied") {
+    // Nếu chưa hỏi quyền, xin phép người dùng
+    Notification.requestPermission().then((permission) => {
+      if (permission === "granted") {
+        new Notification(title, {
+          body: body,
+          icon: icon
+        });
+      } else {
+        // Nếu user từ chối
+        alert(`${title}\n${body}`);
+      }
+    });
+  } else {
+    // Nếu user đã chặn thông báo → fallback alert
+    alert(`${title}\n${body}`);
+  }
+}
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/firebase-messaging-sw.js')
@@ -49,7 +86,7 @@ function requestPermission(registration) {
         })
         .then((currentToken) => {
           if (currentToken) {
-            console.log(currentToken);
+            console.log('currentToken :::::::::: ',currentToken);
             sendTokenToServer(currentToken);
           } else {
             // Show permission request UI
