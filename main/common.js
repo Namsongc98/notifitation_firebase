@@ -1,7 +1,7 @@
 import "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
 import "https://www.gstatic.com/firebasejs/10.9.0/firebase-messaging.js";
-import "https://www.gstatic.com/firebasejs/9.14.0/firebase-app-compat.js";
-import "https://www.gstatic.com/firebasejs/9.14.0/firebase-messaging-compat.js";
+import "https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js";
+import "https://www.gstatic.com/firebasejs/10.9.0/firebase-messaging-compat.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBLyi67O-AUbdXZK1wdM0F5Vvi_couK6u0",
@@ -22,13 +22,30 @@ messaging.onMessage((payload) => {
   console.log("payload", payload);
 });
 
-function requestPermission() {
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/firebase-messaging-sw.js')
+    .then((registration) => {
+      console.log('Service Worker registered:', registration);
+
+      // Gọi FCM sau khi đăng ký SW thành công
+      requestPermission(registration);
+    })
+    .catch((err) => {
+      console.error('Service Worker registration failed:', err);
+    });
+} else {
+  console.error('Service Worker not supported');
+}
+
+function requestPermission(registration) {
   Notification.requestPermission().then((permission) => {
     if (permission === "granted") {
       messaging
         .getToken({
           vapidKey:
-            "BDOGuu7fbPOAvxA2binH6m_7_61rt3e8UYIV-frFFGU5D5tlu8DQOUtMG7Vbj7wexPGVi2wx_xS6jWUqFWTjjWE",
+            // "BDOGuu7fbPOAvxA2binH6m_7_61rt3e8UYIV-frFFGU5D5tlu8DQOUtMG7Vbj7wexPGVi2wx_xS6jWUqFWTjjWE",
+            "BBxKDa6LBhfa5fdd9Y8q2ZsAkmMVB8pHbiMpCIj-zRCeNjhueOV25muKTkR0S_9R-HnLZGhpi1PoWtZowNLu4dY",
+            serviceWorkerRegistration: registration,
         })
         .then((currentToken) => {
           if (currentToken) {
@@ -51,7 +68,6 @@ function requestPermission() {
   });
 }
 
-requestPermission();
 
 function sendTokenToServer() {
   if (!isTokenSentToServer()) {
